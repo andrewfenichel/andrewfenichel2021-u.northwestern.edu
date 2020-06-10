@@ -1,0 +1,64 @@
+Data Science Final Project Codebook
+NBA 2015 Total Data
+
+`closest_defender` = the name of the defensive player closest in distance to the offensive player who shot the ball.
+
+`player_name` = the name of the offensive player who shot the ball.
+
+`final_margin` = the final score of the winning team minus the finnest score of the losing team.
+
+`shot_number` = the number of shots that the `player_name` has attempted in the game up to this point.
+
+`period` = the quarter/period in the game during the shot was attempted. 1 is forst quarter, 2 is 2nd quarter, 5+ is overtime.
+
+`game_clock` = the number of minutes and seconds remaining in the game when the shot is attempted. Format is minutes:seconds.
+
+`shot_clock` = the number of seconds remaining in the possesion when the shot is attempted.
+
+`dribbles` = the number of dribbles the offensive player took before his shot attempt.
+
+`touch_time` = the number of seconds the offensive player had the ball in his hands before his shot attempt.
+
+`shot_dist` = the distance in feet from the basket that the offensive player is from the basket when he takes the shot.
+
+`pts_type` = the type of field goal attempt. 2 = two point field goal, 3 = three point field goal.
+
+`shot_result` = the result of the shot attempt--either a make or a miss.
+
+`close_def_dist` = the distance in feet from the basket that the closest defensive player is from the offensive player when he takes the shot.
+
+`fgm` = a binar variable version of shot_result. 0 = miss, 1 = make.
+
+`pts` = the number of points resulting from the shot result. Either 0, 2, or 3.
+
+`height` = height in feet and inches of the offensive player.
+
+`position` = offensive position of the offensive player.
+
+`weight` = weight in pounds of the offensive player.
+
+`nba_3ptpct` = career three pointers made/ career three pointers attempted for the offensive player.
+
+`nba_efgpct` = career effective field goal percentage for the offensive player.
+
+`nba_fg_percent` = career field goals made/ career field goals attempted for the offensive player.
+
+`nba_ppg` = career total points/ career games played for the offensive player.
+
+`per` = career player efficiency rating for the closest defensive player.
+
+`blk_percent` = career block percentage for the closest defensive player.
+
+`stl_percent` = career steal percentage for the closest defensive player.
+
+`dws` = career total defensive win shares for the closest defensive player.
+
+`dws_48` = career defensive win shares per 48 minutes for the closest defensive player.
+
+`dbpm` = career defensive box plus minus for the closest defensive player.
+
+`defense` = career defense rating for the closest defensive player.
+
+`id` = shot attempt id.
+
+

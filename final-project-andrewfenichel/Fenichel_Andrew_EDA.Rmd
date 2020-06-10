@@ -1,0 +1,135 @@
+---
+title: "DS3 Final Project EDA -- Predicting Made and Missed Shots in the NBA"
+subtitle: "By Andrew Fenichel"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(janitor)
+
+set.seed(3739)
+
+shot_logs_2015 <- read_csv("data/unprocessed/shot_logs.csv") %>%
+  clean_names()
+players_dat <- read_csv("data/unprocessed/players.csv") %>%
+  clean_names()
+defense_dat <- read_csv("data/unprocessed/NBA Season Data.csv") %>%
+  clean_names()
+
+#Data Wrangling
+shot_logs_2015_updated <- shot_logs_2015 %>%
+  select(c(final_margin, shot_number, period, game_clock, shot_clock, 
+           dribbles, touch_time, shot_dist, pts_type, shot_result, 
+           closest_defender, close_def_dist, fgm, pts, player_name))
+
+shot_logs_2015_updated <- shot_logs_2015_updated %>%
+  mutate(closest_defender = sub("(\\w+),\\s(\\w+)","\\2 \\1", shot_logs_2015_updated$closest_defender))
+
+players_dat <- players_dat %>%
+  filter(active_to >= 2015) %>%
+  select(c(height, name, position, weight, nba_3ptpct, 
+           nba_efgpct, nba_fg_percent, nba_ppg)) %>%
+  rename(c("player_name" = "name")) %>%
+  mutate(player_name = tolower(player_name))
+
+defense_dat <- defense_dat %>%
+  filter(year == 2015) %>%
+  select(c(player, per, stl_percent, blk_percent, dws, dws_48, dbpm, defense)) %>%
+  rename(c("closest_defender" = "player"))
+
+defense_dat <- defense_dat %>%
+  group_by(closest_defender) %>% 
+  transmute(
+    per = mean(per),
+    stl_percent = mean(stl_percent),
+    blk_percent = mean(blk_percent),
+    dws = sum(dws),
+    dws_48 = mean(dws_48),
+    dbpm = mean(dbpm),
+    defense = mean(defense)
+    ) %>%
+  distinct(closest_defender,.keep_all = TRUE)
+
+#Data Set Merging
+nba_2015_total_dat <- merge(shot_logs_2015_updated, players_dat, by = "player_name")
+nba_2015_total_dat <- merge(nba_2015_total_dat, defense_dat, by = "closest_defender")
+```
+
+<center>**Initial Overview of Data**</center>
+Data set 1: https://data.world/rezabr/nba-shot-logs-2015
+
+Data set 2: https://data.world/rvino88/1976-to-2015-nba-draft-data/workspace/file?filename=1976_to_2015_Draftees_edit2.csv
+
+Data set 3: https://data.world/jgrosz99/nba-player-data-1978-2016/workspace/file?filename=NBA+Season+Data.csv
+
+Observations (n): 105734
+
+Number of features (p): 30
+
+Missingness: Only two variables contain missing data in my master data set. `shot_clock` has 4826 missing data points out of 110814 observations, and `nba_3ptpct` has 263 missing observations out of 110814 observations. For some games, the shot clock data simply was not recorded, and I do not see this as a major limitation of the data, as my I do not expect to heavily use `shot_clock` as a predictor of my repsonse variable `fgm`. The missing data points for `nba_3ptpct` are conected to players who have never attempted a 3 point shot in their NBA career. Either way, I removed all missing observations for clarity.
+
+<center>**Essential Findings**</center>
+My response variable, `fgm`, is a binary variable coded as 1 = a made field goal and 0 = a missed field goal.
+
+Using a correlation plot, I found that that very few of my variables are highly correlated with eachother--and furthermore, my repsonse variable has o strong correlations with any interesting predictor variables. WHile this is slightly suprising and somewhat dissapointing, it ibviously does not mean a succesful model cannot be produced for prediction. This will most likely mean that my models will require a high number of predictor variables in order to achieve a high rate of prediction on my test data.
+
+```{r, echo=FALSE}
+cor_dat <- nba_2015_total_dat %>%
+  select_if(is.numeric)
+r <- cor(cor_dat, use = "complete.obs")
+round(r, 2)
+corrplot::corrplot(r)
+```
+
+Of course, the one execption to the lack of correlation for my response variable was the predictor variable `pts`, which has a correlation of essentially 1. This makes logical sense.
+
+Further exploring my predictor variables, through the use of box plots, I found that position and weight have a positive relationship, as do position and height (larger players, both in weight and height, tend to play "forward" or "center" versus "guard").
+
+```{r, echo=FALSE}
+nba_2015_total_dat %>%
+  ggplot(aes(weight, position)) +
+  geom_boxplot()
+
+nba_2015_total_dat %>%
+  ggplot(aes(height, position)) +
+  geom_boxplot()
+```
+
+I also found that players who shoot a higher percentage from three shoot a comparitively lower percentage overall, which also makes sense because the three pointer is a lower-percentage shot because it is further away from the basket.
+
+```{r, echo=FALSE}
+nba_2015_total_dat %>%
+  ggplot(aes(nba_3ptpct, nba_fg_percent)) +
+  geom_point()
+```
+
+<center>**Secondary Findings**</center>
+Further exploring my data, I found a couple other interesting, but expected, relationships. By constructing a bar graph of the frequency of shot distances, there is a big dip in field goals attempted in the "midrange", or ~9-18 feet from the basket. This is expected, as the midrange jump shot is considered the least efficient shot in basketabll.
+
+```{r, echo=FALSE}
+nba_2015_total_dat %>%
+  ggplot(aes(shot_dist)) +
+  geom_bar()
+```
+
+Additionally, I found that all of the advanced defensive metrics are relatively correlated with eachother, which is a good and expected discovery. These defensive metrics can be arbitrary and undeveloped, so the fact that the group I used all say that NBA players fall under similar levels of defensive ability means they are legitimate statistics.
+
+```{r, echo=FALSE}
+nba_2015_total_dat %>%
+  ggplot(aes(dbpm, defense, color = dws_48)) +
+  geom_point()
+
+nba_2015_total_dat %>%
+  ggplot(aes(dbpm, dws)) +
+  geom_point()
+
+nba_2015_total_dat %>%
+  ggplot(aes(dws, dws_48)) +
+  geom_point()
+```
+
